@@ -1,12 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { Course } from '../../store/courseStore';
+import { useAuth } from '../../context/AuthContext';
+import { useSavedStore } from '../../store/savedStore';
 
 interface CourseCardProps {
   course: Course;
 }
 
 export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
+  const { user } = useAuth();
+  const { isCourseSaved, saveCourse, unsaveCourse } = useSavedStore();
+  const [isSaved, setIsSaved] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (course?.id) {
+      setIsSaved(isCourseSaved(course.id));
+    }
+  }, [course?.id, isCourseSaved]);
+
+  const handleSaveToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user?.id) return;
+    
+    if (isSaved) {
+      await unsaveCourse(user.id, course.id);
+      setIsSaved(false);
+    } else {
+      await saveCourse(user.id, course.id);
+      setIsSaved(true);
+    }
+  };
+
   const getYouTubeVideoId = (url: string) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
@@ -43,8 +71,33 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
   };
 
   return (
-    <Link to={`/course/${course.id}`} className="block group">
-      <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-green-200">
+    <Link 
+      to={`/course/${course.id}`} 
+      className="block group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-green-200 relative">
+        {/* Save Button */}
+        <button
+          onClick={handleSaveToggle}
+          className={`absolute top-3 right-3 z-10 p-2 rounded-full transition-all duration-200 ${
+            isSaved 
+              ? 'bg-red-500 text-white hover:bg-red-600' 
+              : 'bg-white/90 backdrop-blur-sm text-gray-600 hover:text-red-500 hover:bg-white'
+          } ${isHovered || isSaved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+          title={isSaved ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+        >
+          <svg 
+            className="w-5 h-5" 
+            fill={isSaved ? 'currentColor' : 'none'} 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+        </button>
+
         {/* Course Image/Thumbnail */}
         <div className="relative h-48 overflow-hidden bg-gradient-to-br from-green-100 to-green-50">
           {thumbnailUrl ? (
@@ -62,7 +115,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
           )}
           
           {/* Content Type Badge */}
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-medium text-green-700 shadow-sm flex items-center gap-1">
+          <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-medium text-green-700 shadow-sm flex items-center gap-1">
             {getContentTypeIcon()}
             <span className="capitalize">{course.content_type}</span>
           </div>
