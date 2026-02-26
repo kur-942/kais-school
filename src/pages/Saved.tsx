@@ -37,6 +37,21 @@ export const Saved: React.FC = () => {
     }
   };
 
+  // Fixed function to extract YouTube ID from both URL formats
+  const getYouTubeVideoId = (url: string): string | null => {
+    // Handle youtu.be format
+    if (url.includes('youtu.be')) {
+      const match = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+      return match ? match[1] : null;
+    }
+    // Handle youtube.com format
+    else if (url.includes('youtube.com')) {
+      const match = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+      return match ? match[1] : null;
+    }
+    return null;
+  };
+
   if (!user) {
     navigate('/login');
     return null;
@@ -177,7 +192,7 @@ export const Saved: React.FC = () => {
                   <div className="relative h-48 overflow-hidden bg-gradient-to-br from-green-100 to-green-50">
                     {course.content_type === 'video' ? (
                       <img 
-                        src={`https://img.youtube.com/vi/${new URL(course.content_url).searchParams.get('v')}/hqdefault.jpg`}
+                        src={`https://img.youtube.com/vi/${getYouTubeVideoId(course.content_url)}/hqdefault.jpg`}
                         alt={course.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
