@@ -77,7 +77,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-green-200 relative">
+      <div className="bg-white  rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-green-200 relative">
         {/* Save Button */}
         <button
           onClick={handleSaveToggle}
@@ -85,7 +85,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
             isSaved 
               ? 'bg-red-500 text-white hover:bg-red-600' 
               : 'bg-white/90 backdrop-blur-sm text-gray-600 hover:text-red-500 hover:bg-white'
-          } ${isHovered || isSaved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+          } ${isHovered || isSaved ? 'opacity-100' : 'opacity-80 group-hover:opacity-100'}`}
           title={isSaved ? 'Retirer des favoris' : 'Ajouter aux favoris'}
         >
           <svg 

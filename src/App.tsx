@@ -21,10 +21,7 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <>
-                    <Home />
-                    <Footer />
-                  </>
+                  <Home />
                 </ProtectedRoute>
               }
             />
@@ -32,10 +29,7 @@ function App() {
               path="/course/:courseId"
               element={
                 <ProtectedRoute>
-                  <>
-                    <CourseView />
-                    <Footer />
-                  </>
+                  <CourseView />
                 </ProtectedRoute>
               }
             />
@@ -43,10 +37,7 @@ function App() {
               path="/profile"
               element={
                 <ProtectedRoute>
-                  <>
-                    <Profile />
-                    <Footer />
-                  </>
+                  <Profile />
                 </ProtectedRoute>
               }
             />
@@ -54,10 +45,7 @@ function App() {
               path="/settings"
               element={
                 <ProtectedRoute>
-                  <>
-                    <Settings />
-                    <Footer />
-                  </>
+                  <Settings />
                 </ProtectedRoute>
               }
             />
@@ -65,10 +53,7 @@ function App() {
               path="/tasks"
               element={
                 <ProtectedRoute>
-                  <>
-                    <Tasks />
-                    <Footer />
-                  </>
+                  <Tasks />
                 </ProtectedRoute>
               }
             />
@@ -76,15 +61,13 @@ function App() {
               path="/saved"
               element={
                 <ProtectedRoute>
-                  <>
-                    <Saved />
-                    <Footer />
-                  </>
+                  <Saved />
                 </ProtectedRoute>
               }
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <Footer />
         </div>
       </AuthProvider>
     </BrowserRouter>

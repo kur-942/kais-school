@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import bcrypt from 'bcryptjs';
 import { neon } from '@neondatabase/serverless';
 
@@ -14,134 +15,160 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   error: string | null;
+  initialized: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, niveau: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
+  checkAuth: () => Promise<void>;
 }
 
-// Initialize Neon with environment variable
-const DATABASE_URL = import.meta.env.VITE_DATABASE_URL || 'postgresql://neondb_owner:npg_0VnjsJie2DpS@ep-small-term-aiun3ndw-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require';
+const DATABASE_URL = import.meta.env.VITE_URL;
 const sql = neon(DATABASE_URL);
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: localStorage.getItem('token'),
-  isLoading: false,
-  error: null,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, _get) => ({
+      user: null,
+      token: null,
+      isLoading: false,
+      error: null,
+      initialized: false,
 
-  login: async (email: string, password: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      // Query user from database with proper typing
-      const users = await sql`SELECT * FROM users WHERE email = ${email}`;
-      
-      // Type assertion for the result
-      const typedUsers = users as any[];
+      checkAuth: async () => {
+        const token = localStorage.getItem('auth-storage') 
+          ? JSON.parse(localStorage.getItem('auth-storage')!).state?.token 
+          : null;
+        
+        if (!token) {
+          set({ initialized: true, isLoading: false });
+          return;
+        }
 
-      if (!typedUsers || typedUsers.length === 0) {
-        throw new Error('Invalid credentials');
-      }
+        try {
+          const users = await sql`SELECT id, name, email, niveau FROM users WHERE token = ${token}`;
+          const typedUsers = users as any[];
+          
+          if (typedUsers && typedUsers.length > 0) {
+            const userData = typedUsers[0];
+            set({ 
+              user: {
+                id: userData.id,
+                name: userData.name,
+                email: userData.email,
+                niveau: userData.niveau
+              },
+              token,
+              initialized: true,
+              isLoading: false 
+            });
+          } else {
+            localStorage.removeItem('auth-storage');
+            set({ user: null, token: null, initialized: true, isLoading: false });
+          }
+        } catch (error) {
+          console.error('Auth check error:', error);
+          localStorage.removeItem('auth-storage');
+          set({ user: null, token: null, initialized: true, isLoading: false });
+        }
+      },
 
-      const user = typedUsers[0];
+      login: async (email: string, password: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const users = await sql`SELECT * FROM users WHERE email = ${email}`;
+          const typedUsers = users as any[];
 
-      // Check password
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      
-      if (!isValidPassword) {
-        throw new Error('Invalid credentials');
-      }
+          if (!typedUsers || typedUsers.length === 0) {
+            throw new Error('Invalid credentials');
+          }
 
-      // Generate simple token (in production, use proper JWT)
-      const token = btoa(`${user.id}:${Date.now()}`);
-      
-      // Update token in database
-      await sql`UPDATE users SET token = ${token} WHERE id = ${user.id}`;
+          const user = typedUsers[0];
+          const isValidPassword = await bcrypt.compare(password, user.password);
+          
+          if (!isValidPassword) {
+            throw new Error('Invalid credentials');
+          }
 
-      // Create properly typed user object
-      const authenticatedUser: User = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        niveau: user.niveau
-      };
-      
-      localStorage.setItem('token', token);
-      
-      set({ 
-        user: authenticatedUser, 
-        token, 
-        isLoading: false, 
-        error: null 
-      });
-    } catch (error: any) {
-      set({ 
-        error: error.message || 'Login failed', 
-        isLoading: false 
-      });
+          const token = btoa(`${user.id}:${Date.now()}`);
+          await sql`UPDATE users SET token = ${token} WHERE id = ${user.id}`;
+
+          set({ 
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              niveau: user.niveau
+            },
+            token, 
+            isLoading: false, 
+            error: null 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Login failed', 
+            isLoading: false 
+          });
+        }
+      },
+
+      register: async (name: string, email: string, password: string, niveau: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const existingUsers = await sql`SELECT id FROM users WHERE email = ${email}`;
+          const typedExisting = existingUsers as any[];
+
+          if (typedExisting && typedExisting.length > 0) {
+            throw new Error('User already exists');
+          }
+
+          const hashedPassword = await bcrypt.hash(password, 10);
+          const token = btoa(`${email}:${Date.now()}`);
+
+          const newUsers = await sql`
+            INSERT INTO users (name, email, password, niveau, token) 
+            VALUES (${name}, ${email}, ${hashedPassword}, ${niveau}, ${token})
+            RETURNING id, name, email, niveau
+          `;
+          
+          const typedNewUsers = newUsers as any[];
+
+          if (!typedNewUsers || typedNewUsers.length === 0) {
+            throw new Error('Failed to create user');
+          }
+
+          const createdUser = typedNewUsers[0];
+          
+          set({ 
+            user: {
+              id: createdUser.id,
+              name: createdUser.name,
+              email: createdUser.email,
+              niveau: createdUser.niveau
+            },
+            token, 
+            isLoading: false, 
+            error: null 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Registration failed', 
+            isLoading: false 
+          });
+        }
+      },
+
+      logout: () => {
+        localStorage.removeItem('auth-storage');
+        set({ user: null, token: null, error: null, isLoading: false });
+      },
+
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ user: state.user, token: state.token }),
     }
-  },
-
-  register: async (name: string, email: string, password: string, niveau: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      // Check if user exists
-      const existingUsers = await sql`SELECT id FROM users WHERE email = ${email}`;
-      const typedExistingUsers = existingUsers as any[];
-
-      if (typedExistingUsers && typedExistingUsers.length > 0) {
-        throw new Error('User already exists');
-      }
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Generate token
-      const token = btoa(`${email}:${Date.now()}`);
-
-      // Create user and get the returned data
-      const newUsers = await sql`
-        INSERT INTO users (name, email, password, niveau, token) 
-        VALUES (${name}, ${email}, ${hashedPassword}, ${niveau}, ${token})
-        RETURNING id, name, email, niveau
-      `;
-      
-      const typedNewUsers = newUsers as any[];
-
-      if (!typedNewUsers || typedNewUsers.length === 0) {
-        throw new Error('Failed to create user');
-      }
-
-      const createdUser = typedNewUsers[0];
-      
-      // Create properly typed user object
-      const newUser: User = {
-        id: createdUser.id,
-        name: createdUser.name,
-        email: createdUser.email,
-        niveau: createdUser.niveau
-      };
-      
-      localStorage.setItem('token', token);
-      
-      set({ 
-        user: newUser, 
-        token, 
-        isLoading: false, 
-        error: null 
-      });
-    } catch (error: any) {
-      set({ 
-        error: error.message || 'Registration failed', 
-        isLoading: false 
-      });
-    }
-  },
-
-  logout: () => {
-    localStorage.removeItem('token');
-    set({ user: null, token: null, error: null });
-  },
-
-  clearError: () => set({ error: null }),
-}));
+  )
+);

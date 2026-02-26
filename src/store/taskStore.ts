@@ -8,19 +8,11 @@ export interface Task {
   description: string | null;
   task_type: 'todo' | 'exam';
   category_id: number | null;
-  task_category_id: number | null;
   exam_id: number | null;
   is_done: boolean;
   due_date: string | null;
-  priority: 'low' | 'medium' | 'high';
   created_at: string;
-  // Joined fields
-  task_category?: {
-    id: number;
-    name: string;
-    color: string;
-    icon: string;
-  } | null;
+  // Joined field
   category_name?: string;
 }
 
@@ -34,7 +26,7 @@ export interface Exam {
   created_at: string;
 }
 
-export type NewTask = Omit<Task, 'id' | 'created_at' | 'task_category' | 'category_name'>;
+export type NewTask = Omit<Task, 'id' | 'created_at' | 'category_name'>;
 export type NewExam = Omit<Exam, 'id' | 'created_at'>;
 
 interface TaskState {
@@ -49,10 +41,8 @@ interface TaskState {
   pageSize: number;
   filters: {
     taskType: 'all' | 'todo' | 'exam';
-    taskCategoryId: number | null;
     categoryId: number | null;
     isDone: boolean | null;
-    priority: 'all' | 'low' | 'medium' | 'high';
   };
   
   fetchTasks: (userId: number) => Promise<void>;
@@ -85,10 +75,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   pageSize: 10,
   filters: {
     taskType: 'all',
-    taskCategoryId: null,
     categoryId: null,
-    isDone: null,
-    priority: 'all'
+    isDone: null
   },
 
   fetchTasks: async (userId: number) => {
@@ -97,22 +85,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       const tasks = await sql`
         SELECT 
           t.*,
-          tc.id as tc_id,
-          tc.name as tc_name,
-          tc.color as tc_color,
-          tc.icon as tc_icon,
           c.name as category_name
         FROM tasks t
-        LEFT JOIN task_categories tc ON t.task_category_id = tc.id
         LEFT JOIN categories c ON t.category_id = c.id
         WHERE t.user_id = ${userId}
         ORDER BY 
           CASE WHEN t.is_done THEN 1 ELSE 0 END,
-          CASE t.priority 
-            WHEN 'high' THEN 1
-            WHEN 'medium' THEN 2
-            WHEN 'low' THEN 3
-          END,
           CASE WHEN t.due_date IS NULL THEN 1 ELSE 0 END,
           t.due_date ASC,
           t.created_at DESC
@@ -127,18 +105,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         description: task.description,
         task_type: task.task_type,
         category_id: task.category_id,
-        task_category_id: task.task_category_id,
         exam_id: task.exam_id,
         is_done: task.is_done,
         due_date: task.due_date,
-        priority: task.priority || 'medium',
         created_at: task.created_at,
-        task_category: task.task_category_id ? {
-          id: task.tc_id,
-          name: task.tc_name,
-          color: task.tc_color,
-          icon: task.tc_icon
-        } : null,
         category_name: task.category_name
       }));
 
@@ -203,22 +173,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           description, 
           task_type, 
           category_id, 
-          task_category_id, 
           exam_id, 
           is_done, 
-          due_date, 
-          priority
+          due_date
         ) VALUES (
           ${task.user_id}, 
           ${task.title}, 
           ${task.description}, 
           ${task.task_type}, 
           ${task.category_id}, 
-          ${task.task_category_id}, 
           ${task.exam_id}, 
           ${task.is_done}, 
-          ${task.due_date}, 
-          ${task.priority}
+          ${task.due_date}
         )
         RETURNING *
       `;
@@ -228,23 +194,6 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       
       if (typedResult && typedResult.length > 0) {
         const createdTask = typedResult[0];
-        
-        // Fetch category info if exists
-        let taskCategory = null;
-        if (createdTask.task_category_id) {
-          const category = await sql`
-            SELECT * FROM task_categories WHERE id = ${createdTask.task_category_id}
-          `;
-          const typedCategory = category as any[];
-          if (typedCategory.length > 0) {
-            taskCategory = {
-              id: typedCategory[0].id,
-              name: typedCategory[0].name,
-              color: typedCategory[0].color,
-              icon: typedCategory[0].icon
-            };
-          }
-        }
         
         // Fetch course category name if exists
         let categoryName = null;
@@ -265,13 +214,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           description: createdTask.description,
           task_type: createdTask.task_type,
           category_id: createdTask.category_id,
-          task_category_id: createdTask.task_category_id,
           exam_id: createdTask.exam_id,
           is_done: createdTask.is_done,
           due_date: createdTask.due_date,
-          priority: createdTask.priority || 'medium',
           created_at: createdTask.created_at,
-          task_category: taskCategory,
           category_name: categoryName
         };
         
@@ -346,15 +292,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   updateTask: async (taskId: number, updates: Partial<Task>) => {
     set({ isLoading: true, error: null });
     try {
-      // Build update query dynamically
-      const entries = Object.entries(updates).filter(([_, value]) => value !== undefined);
-      
-      if (entries.length === 0) {
-        set({ isLoading: false });
-        return;
-      }
-
-      // Handle each update field individually to avoid SQL injection
+      // Handle each update field individually
       if (updates.title !== undefined) {
         await sql`UPDATE tasks SET title = ${updates.title} WHERE id = ${taskId}`;
       }
@@ -364,14 +302,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       if (updates.category_id !== undefined) {
         await sql`UPDATE tasks SET category_id = ${updates.category_id} WHERE id = ${taskId}`;
       }
-      if (updates.task_category_id !== undefined) {
-        await sql`UPDATE tasks SET task_category_id = ${updates.task_category_id} WHERE id = ${taskId}`;
-      }
       if (updates.due_date !== undefined) {
         await sql`UPDATE tasks SET due_date = ${updates.due_date} WHERE id = ${taskId}`;
-      }
-      if (updates.priority !== undefined) {
-        await sql`UPDATE tasks SET priority = ${updates.priority} WHERE id = ${taskId}`;
       }
       if (updates.is_done !== undefined) {
         await sql`UPDATE tasks SET is_done = ${updates.is_done} WHERE id = ${taskId}`;
@@ -399,7 +331,6 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   updateExam: async (examId: number, updates: Partial<Exam>) => {
     set({ isLoading: true, error: null });
     try {
-      // Handle each update field individually
       if (updates.name !== undefined) {
         await sql`UPDATE exams SET name = ${updates.name} WHERE id = ${examId}`;
       }
@@ -413,7 +344,6 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         await sql`UPDATE exams SET exam_date = ${updates.exam_date} WHERE id = ${examId}`;
       }
 
-      // Update local state
       set(state => ({
         exams: state.exams.map(exam => 
           exam.id === examId ? { ...exam, ...updates } : exam
@@ -505,29 +435,16 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     
     let filtered = [...tasks];
     
-    // Filter by task type
     if (filters.taskType !== 'all') {
       filtered = filtered.filter(task => task.task_type === filters.taskType);
     }
     
-    // Filter by task category (user-defined)
-    if (filters.taskCategoryId) {
-      filtered = filtered.filter(task => task.task_category_id === filters.taskCategoryId);
-    }
-    
-    // Filter by course category
     if (filters.categoryId) {
       filtered = filtered.filter(task => task.category_id === filters.categoryId);
     }
     
-    // Filter by done status
     if (filters.isDone !== null) {
       filtered = filtered.filter(task => task.is_done === filters.isDone);
-    }
-    
-    // Filter by priority
-    if (filters.priority !== 'all') {
-      filtered = filtered.filter(task => task.priority === filters.priority);
     }
     
     const page = 0;
@@ -560,10 +477,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     set({
       filters: {
         taskType: 'all',
-        taskCategoryId: null,
         categoryId: null,
-        isDone: null,
-        priority: 'all'
+        isDone: null
       }
     });
     get().applyFilters();
