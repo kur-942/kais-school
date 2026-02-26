@@ -6,6 +6,7 @@ import { Header } from '../components/layout/Header';
 import { Sidebar } from '../components/layout/Sidebar';
 
 export const Home: React.FC = () => {
+  
   const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
@@ -25,6 +26,13 @@ export const Home: React.FC = () => {
       fetchCoursesByNiveau(user.niveau);
     }
   }, [user?.niveau]);
+  
+ useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }, []);
 
   const handleLoadMore = () => {
     loadMore();
@@ -33,6 +41,7 @@ export const Home: React.FC = () => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+  
 
   if (!user) {
     return null;

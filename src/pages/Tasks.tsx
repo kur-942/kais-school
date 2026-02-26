@@ -92,6 +92,12 @@ export const Tasks: React.FC = () => {
     });
     setShowAddModal(false);
   };
+ useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }, []);
 
   const handleAddExam = async () => {
     if (!user?.id) return;

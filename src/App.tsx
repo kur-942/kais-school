@@ -11,6 +11,7 @@ import { Saved } from './pages/Saved';
 import { Footer } from './components/layout/Footer';
 
 function App() {
+ 
   return (
     <BrowserRouter>
       <AuthProvider>

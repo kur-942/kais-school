@@ -9,6 +9,12 @@ export const Saved: React.FC = () => {
   const { savedCourses, isLoading, error, fetchSavedCourses, unsaveCourse } = useSavedStore();
   
   const [filter, setFilter] = useState<'all' | 'video' | 'text' | 'pdf' | 'image'>('all');
+ useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }, []);
 
   useEffect(() => {
     if (user?.id) {

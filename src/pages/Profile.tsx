@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -10,6 +10,12 @@ export const Profile: React.FC = () => {
     navigate('/login');
     return null;
   }
+ useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }, []);
 
   // Get initials for avatar
   const getInitials = () => {

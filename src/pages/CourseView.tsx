@@ -62,7 +62,12 @@ export const CourseView: React.FC = () => {
 
     fetchCourse();
   }, [courseId]);
-
+useEffect(() => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+}, []);
   useEffect(() => {
     // Adjust content height to fit viewport
     const updateContentHeight = () => {

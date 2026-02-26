@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { neon } from '@neondatabase/serverless';
@@ -41,6 +41,12 @@ export const Settings: React.FC = () => {
 
   const DATABASE_URL = import.meta.env.VITE_URL;
   const sql = neon(DATABASE_URL);
+ useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }, []);
 
   // Niveaux options
   const niveaux: { category: string; options: string[] }[] = [
