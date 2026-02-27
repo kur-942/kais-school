@@ -16,12 +16,7 @@ interface RegisterFormData {
   confirmPassword: string;
 }
 
-useEffect(() => {
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth'
-  });
-}, []);
+
 type RegisterStep = 'name' | 'email' | 'password' | 'niveau';
 
 export const AuthForm: React.FC = () => {
@@ -42,7 +37,12 @@ export const AuthForm: React.FC = () => {
   } = useForm<RegisterFormData>({
     defaultValues: registerData
   });
-
+useEffect(() => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+}, []);
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
