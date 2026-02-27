@@ -22,7 +22,10 @@ export interface TaskCategoryState {
 }
 
 const DATABASE_URL = import.meta.env.VITE_URL;
-const sql = neon(DATABASE_URL);
+// Add the configuration to disable the warning
+const sql = neon(DATABASE_URL, {
+  disableWarningInBrowsers: true
+});;
 
 // Predefined icons and colors for categories - MAKE SURE TO EXPORT THESE
 export const predefinedIcons = [

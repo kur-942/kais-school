@@ -39,8 +39,11 @@ interface CourseState {
   resetCourses: () => void;
 }
 
-const DATABASE_URL = import.meta.env.VITE_DATABASE_URL || 'postgresql://neondb_owner:npg_0VnjsJie2DpS@ep-small-term-aiun3ndw-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require';
-const sql = neon(DATABASE_URL);
+const DATABASE_URL = import.meta.env.VITE_URL 
+// Add the configuration to disable the warning
+const sql = neon(DATABASE_URL, {
+  disableWarningInBrowsers: true
+});
 
 export const useCourseStore = create<CourseState>((set, get) => ({
   courses: [],

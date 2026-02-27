@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTaskStore } from '../../store/taskStore';
+import { useWeatherStore, tunisianStates } from '../../store/weatherStore';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -12,13 +14,28 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
   const { tasks, exams, fetchTasks, fetchExams } = useTaskStore();
+  const { 
+    currentWeather, 
+    selectedCity,
+    favorites,
+    isLoading,
+    fetchWeather,
+    setSelectedCity,
+    toggleFavorite,
+    loadFavorites
+  } = useWeatherStore();
+
+  const [weatherSearch, setWeatherSearch] = useState('');
 
   useEffect(() => {
     if (user?.id) {
       fetchTasks(user.id);
       fetchExams(user.id);
     }
+    loadFavorites();
+    fetchWeather('Tunis');
   }, [user?.id]);
 
   const getGreeting = () => {
@@ -37,6 +54,13 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
     e.stopPropagation();
     onMenuClick();
   };
+
+  // Type the filter function properly
+  const filteredStates = tunisianStates.filter((state: string) =>
+    state.toLowerCase().includes(weatherSearch.toLowerCase())
+  );
+
+  const isFavorite = favorites.includes(selectedCity);
 
   // Calculate stats
   const pendingTasks = tasks.filter(t => !t.is_done && t.task_type === 'todo').length;
@@ -94,7 +118,154 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
             </div>
           </div>
 
-          {/* Desktop Stats Section - Hidden on mobile */}
+          {/* Weather Widget - Desktop */}
+          <div className="hidden lg:block relative">
+            <button
+              onClick={() => setShowWeather(!showWeather)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              ) : currentWeather ? (
+                <>
+                  <img 
+                    src={`https://openweathermap.org/img/wn/${currentWeather.icon}.png`}
+                    alt="weather"
+                    className="w-6 h-6"
+                  />
+                  <span className="text-sm font-medium text-blue-700">
+                    {currentWeather.temp}°C
+                  </span>
+                  <span className="text-xs text-blue-600">
+                    {selectedCity}
+                  </span>
+                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </>
+              ) : null}
+            </button>
+
+            {/* Weather Dropdown */}
+            <AnimatePresence>
+              {showWeather && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-blue-100 p-4 z-50"
+                >
+                  {/* City Selector */}
+                  <div className="mb-3">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Rechercher une ville..."
+                        value={weatherSearch}
+                        onChange={(e) => setWeatherSearch(e.target.value)}
+                        className="w-full px-3 py-2 pl-8 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      />
+                      <svg className="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Favorites */}
+                  {favorites.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-xs font-semibold text-gray-500 mb-1 px-2">Favoris</p>
+                      {favorites.filter((city: string) => city.toLowerCase().includes(weatherSearch.toLowerCase())).map((city: string) => (
+                        <button
+                          key={city}
+                          onClick={() => {
+                            setSelectedCity(city);
+                            setShowWeather(false);
+                            setWeatherSearch('');
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-yellow-50 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <span className="text-yellow-500">★</span>
+                          <span>{city}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Cities List */}
+                  <div className="max-h-48 overflow-y-auto">
+                    <p className="text-xs font-semibold text-gray-500 mb-1 px-2">Toutes les villes</p>
+                    {filteredStates.map((city: string) => (
+                      <button
+                        key={city}
+                        onClick={() => {
+                          setSelectedCity(city);
+                          setShowWeather(false);
+                          setWeatherSearch('');
+                        }}
+                        className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded-lg transition-colors flex items-center justify-between ${
+                          city === selectedCity ? 'bg-blue-50 text-blue-700 font-medium' : ''
+                        }`}
+                      >
+                        <span>{city}</span>
+                        {city === selectedCity && (
+                          <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Current Weather Details */}
+                  {currentWeather && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-2xl font-bold text-gray-800">{currentWeather.temp}°C</p>
+                          <p className="text-xs text-gray-500 capitalize">{currentWeather.description}</p>
+                        </div>
+                        <img 
+                          src={`https://openweathermap.org/img/wn/${currentWeather.icon}@2x.png`}
+                          alt={currentWeather.description}
+                          className="w-12 h-12"
+                        />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-3">
+                        <div className="text-center">
+                          <p className="text-xs text-gray-500">Ressenti</p>
+                          <p className="text-sm font-semibold">{currentWeather.feels_like}°C</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-gray-500">Humidité</p>
+                          <p className="text-sm font-semibold">{currentWeather.humidity}%</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-gray-500">Vent</p>
+                          <p className="text-sm font-semibold">{currentWeather.wind_speed} km/h</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => toggleFavorite(selectedCity)}
+                        className={`w-full mt-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                          isFavorite 
+                            ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' 
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                        {isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Desktop Stats Section */}
           <div className="hidden lg:flex items-center gap-4 mx-4">
             <Link
               to="/tasks"
@@ -119,6 +290,27 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
 
           {/* Right section - Navigation Icons */}
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            {/* Mobile Weather Icon */}
+            <button
+              onClick={() => setShowWeather(!showWeather)}
+              className="lg:hidden relative p-2 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              ) : currentWeather ? (
+                <>
+                  <img 
+                    src={`https://openweathermap.org/img/wn/${currentWeather.icon}.png`}
+                    alt="weather"
+                    className="w-5 h-5"
+                  />
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {currentWeather.temp}°
+                  </span>
+                </>
+              ) : null}
+            </button>
+
             {/* Saved Courses Link */}
             <Link
               to="/saved"
@@ -145,7 +337,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                 </svg>
               </button>
 
-              {/* Profile Dropdown Menu */}
+              {/* Profile Dropdown Menu - Keep as is */}
               {isProfileOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-green-100 py-2 z-50">
                   {/* User info header */}
@@ -213,7 +405,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
           </div>
         </div>
 
-        {/* Mobile Stats Section - Only visible on mobile */}
+        {/* Mobile Stats Section */}
         <div className="lg:hidden flex items-center justify-around gap-2 pb-3 pt-1 border-t border-gray-100 mt-2">
           <Link
             to="/tasks"

@@ -24,7 +24,10 @@ interface SavedState {
 }
 
 const DATABASE_URL = import.meta.env.VITE_URL;
-const sql = neon(DATABASE_URL);
+// Add the configuration to disable the warning
+const sql = neon(DATABASE_URL, {
+  disableWarningInBrowsers: true
+});
 
 export const useSavedStore = create<SavedState>((set, get) => ({
   savedCourses: [],
