@@ -16,7 +16,12 @@ interface RegisterFormData {
   confirmPassword: string;
 }
 
-
+useEffect(() => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+}, []);
 type RegisterStep = 'name' | 'email' | 'password' | 'niveau';
 
 export const AuthForm: React.FC = () => {
