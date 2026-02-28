@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useTaskStore } from '../../store/taskStore';
-import { useWeatherStore, tunisianStates } from '../../store/weatherStore';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { useTaskStore } from "../../store/taskStore";
+import { useWeatherStore, tunisianStates } from "../../store/weatherStore";
+import { Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -16,18 +16,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [showWeather, setShowWeather] = useState(false);
   const { tasks, exams, fetchTasks, fetchExams } = useTaskStore();
-  const { 
-    currentWeather, 
+  const {
+    currentWeather,
     selectedCity,
     favorites,
     isLoading,
     fetchWeather,
     setSelectedCity,
     toggleFavorite,
-    loadFavorites
+    loadFavorites,
   } = useWeatherStore();
 
-  const [weatherSearch, setWeatherSearch] = useState('');
+  const [weatherSearch, setWeatherSearch] = useState("");
 
   useEffect(() => {
     if (user?.id) {
@@ -35,19 +35,19 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
       fetchExams(user.id);
     }
     loadFavorites();
-    fetchWeather('Tunis');
+    fetchWeather("Tunis");
   }, [user?.id]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Bonjour';
-    if (hour < 18) return 'Bon après-midi';
-    return 'Bonsoir';
+    if (hour < 12) return "Bonjour";
+    if (hour < 18) return "Bon après-midi";
+    return "Bonsoir";
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const handleMenuClick = (e: React.MouseEvent) => {
@@ -57,21 +57,24 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
 
   // Type the filter function properly
   const filteredStates = tunisianStates.filter((state: string) =>
-    state.toLowerCase().includes(weatherSearch.toLowerCase())
+    state.toLowerCase().includes(weatherSearch.toLowerCase()),
   );
 
   const isFavorite = favorites.includes(selectedCity);
 
   // Calculate stats
-  const pendingTasks = tasks.filter(t => !t.is_done && t.task_type === 'todo').length;
-  const pendingExams = exams.filter(e => new Date(e.exam_date) >= new Date()).length;
-  const todoCount = tasks.filter(t => t.task_type === 'todo').length;
+  const pendingTasks = tasks.filter(
+    (t) => !t.is_done && t.task_type === "todo",
+  ).length;
+  const pendingExams = exams.filter(
+    (e) => new Date(e.exam_date) >= new Date(),
+  ).length;
+  const todoCount = tasks.filter((t) => t.task_type === "todo").length;
 
   return (
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-green-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          
           {/* Left section - Menu/Book button and Greeting */}
           <div className="flex items-center gap-3 flex-1">
             {/* Mobile: Menu button | Desktop: Book icon */}
@@ -80,18 +83,34 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
               className={`
                 p-2 rounded-lg transition-all duration-200 cursor-pointer flex-shrink-0
                 lg:hidden
-                ${sidebarOpen 
-                  ? 'bg-green-500 text-white hover:bg-green-600' 
-                  : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+                ${
+                  sidebarOpen
+                    ? "bg-green-500 text-white hover:bg-green-600"
+                    : "text-gray-600 hover:text-green-600 hover:bg-green-50"
                 }
               `}
               aria-label={sidebarOpen ? "Fermer le menu" : "Ouvrir le menu"}
             >
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-5 h-5 sm:w-6 sm:h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 {sidebarOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 )}
               </svg>
             </button>
@@ -101,8 +120,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
               to="/"
               className="hidden lg:flex items-center gap-2 p-2 rounded-lg text-green-600 hover:bg-green-50 transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
               </svg>
               <span className="font-medium">Akinji -sp 0.2</span>
             </Link>
@@ -110,11 +139,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
             {/* Greeting - Always visible */}
             <div className="min-w-0 flex-1">
               <h1 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
-                {getGreeting()}, {user?.name?.split(' ')[0] || 'Cher utilisateur'}!
+                {getGreeting()},{" "}
+                {user?.name?.split(" ")[0] || "Cher utilisateur"}!
               </h1>
-              <p className="text-xs text-gray-500 truncate">
-                {user?.niveau}
-              </p>
+              <p className="text-xs text-gray-500 truncate">{user?.niveau}</p>
             </div>
           </div>
 
@@ -128,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                 <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
               ) : currentWeather ? (
                 <>
-                  <img 
+                  <img
                     src={`https://openweathermap.org/img/wn/${currentWeather.icon}.png`}
                     alt="weather"
                     className="w-6 h-6"
@@ -136,11 +164,19 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                   <span className="text-sm font-medium text-blue-700">
                     {currentWeather.temp}°C
                   </span>
-                  <span className="text-xs text-blue-600">
-                    {selectedCity}
-                  </span>
-                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <span className="text-xs text-blue-600">{selectedCity}</span>
+                  <svg
+                    className="w-4 h-4 text-blue-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </>
               ) : null}
@@ -165,8 +201,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                         onChange={(e) => setWeatherSearch(e.target.value)}
                         className="w-full px-3 py-2 pl-8 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
                       />
-                      <svg className="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      <svg
+                        className="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -174,43 +220,65 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                   {/* Favorites */}
                   {favorites.length > 0 && (
                     <div className="mb-2">
-                      <p className="text-xs font-semibold text-gray-500 mb-1 px-2">Favoris</p>
-                      {favorites.filter((city: string) => city.toLowerCase().includes(weatherSearch.toLowerCase())).map((city: string) => (
-                        <button
-                          key={city}
-                          onClick={() => {
-                            setSelectedCity(city);
-                            setShowWeather(false);
-                            setWeatherSearch('');
-                          }}
-                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-yellow-50 rounded-lg transition-colors flex items-center gap-2"
-                        >
-                          <span className="text-yellow-500">★</span>
-                          <span>{city}</span>
-                        </button>
-                      ))}
+                      <p className="text-xs font-semibold text-gray-500 mb-1 px-2">
+                        Favoris
+                      </p>
+                      {favorites
+                        .filter((city: string) =>
+                          city
+                            .toLowerCase()
+                            .includes(weatherSearch.toLowerCase()),
+                        )
+                        .map((city: string) => (
+                          <button
+                            key={city}
+                            onClick={() => {
+                              setSelectedCity(city);
+                              setShowWeather(false);
+                              setWeatherSearch("");
+                            }}
+                            className="w-full text-left px-3 py-1.5 text-sm hover:bg-yellow-50 rounded-lg transition-colors flex items-center gap-2"
+                          >
+                            <span className="text-yellow-500">★</span>
+                            <span>{city}</span>
+                          </button>
+                        ))}
                     </div>
                   )}
 
                   {/* Cities List */}
                   <div className="max-h-48 overflow-y-auto">
-                    <p className="text-xs font-semibold text-gray-500 mb-1 px-2">Toutes les villes</p>
+                    <p className="text-xs font-semibold text-gray-500 mb-1 px-2">
+                      Toutes les villes
+                    </p>
                     {filteredStates.map((city: string) => (
                       <button
                         key={city}
                         onClick={() => {
                           setSelectedCity(city);
                           setShowWeather(false);
-                          setWeatherSearch('');
+                          setWeatherSearch("");
                         }}
                         className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded-lg transition-colors flex items-center justify-between ${
-                          city === selectedCity ? 'bg-blue-50 text-blue-700 font-medium' : ''
+                          city === selectedCity
+                            ? "bg-blue-50 text-blue-700 font-medium"
+                            : ""
                         }`}
                       >
                         <span>{city}</span>
                         {city === selectedCity && (
-                          <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          <svg
+                            className="w-4 h-4 text-blue-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
                           </svg>
                         )}
                       </button>
@@ -222,10 +290,14 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                     <div className="mt-4 pt-4 border-t border-gray-100">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-2xl font-bold text-gray-800">{currentWeather.temp}°C</p>
-                          <p className="text-xs text-gray-500 capitalize">{currentWeather.description}</p>
+                          <p className="text-2xl font-bold text-gray-800">
+                            {currentWeather.temp}°C
+                          </p>
+                          <p className="text-xs text-gray-500 capitalize">
+                            {currentWeather.description}
+                          </p>
                         </div>
-                        <img 
+                        <img
                           src={`https://openweathermap.org/img/wn/${currentWeather.icon}@2x.png`}
                           alt={currentWeather.description}
                           className="w-12 h-12"
@@ -234,29 +306,47 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                       <div className="grid grid-cols-3 gap-2 mt-3">
                         <div className="text-center">
                           <p className="text-xs text-gray-500">Ressenti</p>
-                          <p className="text-sm font-semibold">{currentWeather.feels_like}°C</p>
+                          <p className="text-sm font-semibold">
+                            {currentWeather.feels_like}°C
+                          </p>
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-gray-500">Humidité</p>
-                          <p className="text-sm font-semibold">{currentWeather.humidity}%</p>
+                          <p className="text-sm font-semibold">
+                            {currentWeather.humidity}%
+                          </p>
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-gray-500">Vent</p>
-                          <p className="text-sm font-semibold">{currentWeather.wind_speed} km/h</p>
+                          <p className="text-sm font-semibold">
+                            {currentWeather.wind_speed} km/h
+                          </p>
                         </div>
                       </div>
                       <button
                         onClick={() => toggleFavorite(selectedCity)}
                         className={`w-full mt-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                          isFavorite 
-                            ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' 
-                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                          isFavorite
+                            ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                            : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                         }`}
                       >
-                        <svg className="w-4 h-4" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill={isFavorite ? "currentColor" : "none"}
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                          />
                         </svg>
-                        {isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                        {isFavorite
+                          ? "Retirer des favoris"
+                          : "Ajouter aux favoris"}
                       </button>
                     </div>
                   )}
@@ -274,7 +364,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
               <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                 {pendingExams}
               </div>
-              <span className="text-sm font-medium text-orange-700">Examens</span>
+              <span className="text-sm font-medium text-orange-700">
+                Examens
+              </span>
             </Link>
 
             <Link
@@ -284,7 +376,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
               <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                 {todoCount}
               </div>
-              <span className="text-sm font-medium text-purple-700">Tâches</span>
+              <span className="text-sm font-medium text-purple-700">
+                Tâches
+              </span>
             </Link>
           </div>
 
@@ -299,7 +393,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                 <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
               ) : currentWeather ? (
                 <>
-                  <img 
+                  <img
                     src={`https://openweathermap.org/img/wn/${currentWeather.icon}.png`}
                     alt="weather"
                     className="w-5 h-5"
@@ -316,8 +410,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
               to="/saved"
               className="relative p-2 rounded-lg text-gray-600 hover:text-green-600 hover:bg-green-50 transition-all group"
             >
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              <svg
+                className="w-5 h-5 sm:w-6 sm:h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                />
               </svg>
             </Link>
 
@@ -329,11 +433,21 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
               >
                 <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-md">
                   <span className="text-sm sm:text-base font-medium text-white">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    {user?.name?.charAt(0).toUpperCase() || "U"}
                   </span>
                 </div>
-                <svg className="w-4 h-4 text-gray-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <svg
+                  className="w-4 h-4 text-gray-500 hidden sm:block"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
 
@@ -342,9 +456,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-green-100 py-2 z-50">
                   {/* User info header */}
                   <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{user?.email}</p>
-                    <p className="text-xs text-green-600 mt-1 font-medium">{user?.niveau}</p>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {user?.name}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {user?.email}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1 font-medium">
+                      {user?.niveau}
+                    </p>
                   </div>
 
                   {/* Menu items */}
@@ -354,19 +474,58 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 transition-colors"
                       onClick={() => setIsProfileOpen(false)}
                     >
-                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      <svg
+                        className="w-5 h-5 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
                       </svg>
                       <span>Mon profil</span>
                     </Link>
-
+                    <Link
+                      to="/tools"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 transition-colors"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <svg
+                        className="w-5 h-5 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+                        />
+                      </svg>
+                      <span>Outils maths</span>
+                    </Link>
                     <Link
                       to="/tasks"
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 transition-colors"
                       onClick={() => setIsProfileOpen(false)}
                     >
-                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      <svg
+                        className="w-5 h-5 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                        />
                       </svg>
                       <span>Mes tâches</span>
                     </Link>
@@ -376,9 +535,24 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 transition-colors"
                       onClick={() => setIsProfileOpen(false)}
                     >
-                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <svg
+                        className="w-5 h-5 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
                       </svg>
                       <span>Paramètres</span>
                     </Link>
@@ -393,8 +567,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                       }}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
                       </svg>
                       <span>Déconnexion</span>
                     </button>

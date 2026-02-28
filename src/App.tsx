@@ -1,18 +1,21 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { AuthForm } from './components/auth/AuthForm';
-import { Home } from './pages/Home';
-import { CourseView } from './pages/CourseView';
-import { Profile } from './pages/Profile';
-import { Settings } from './pages/Settings';
-import { Tasks } from './pages/Tasks';
-import { Saved } from './pages/Saved';
-import { Footer } from './components/layout/Footer';
-import { ExamNotifications } from './components/notifications/ExamNotifications';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AuthForm } from "./components/auth/AuthForm";
+import { Home } from "./pages/Home";
+import { CourseView } from "./pages/CourseView";
+import { Profile } from "./pages/Profile";
+import { Settings } from "./pages/Settings";
+import { Tasks } from "./pages/Tasks";
+import { Saved } from "./pages/Saved";
+import { Footer } from "./components/layout/Footer";
+import { ExamNotifications } from "./components/notifications/ExamNotifications";
+import { Tools } from "./pages/Tools";
+import { Calculator } from "./pages/tools/Calculator";
+import { FunctionEvaluator } from "./pages/tools/FunctionEvaluator";
+import { GraphPlotter } from "./pages/tools/GraphPlotter";
 
 function App() {
- 
   return (
     <BrowserRouter>
       <AuthProvider>
@@ -67,10 +70,42 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/tools"
+              element={
+                <ProtectedRoute>
+                  <Tools />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tools/calculator"
+              element={
+                <ProtectedRoute>
+                  <Calculator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tools/graph"
+              element={
+                <ProtectedRoute>
+                  <GraphPlotter />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tools/evaluator"
+              element={
+                <ProtectedRoute>
+                  <FunctionEvaluator />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
-          <ExamNotifications /> 
+          <ExamNotifications />
         </div>
       </AuthProvider>
     </BrowserRouter>

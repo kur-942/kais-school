@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { Course } from '../../store/courseStore';
 import { CourseCard } from './CourseCard';
 
@@ -7,7 +7,7 @@ interface CourseGridProps {
   isLoading: boolean;
 }
 
-export const CourseGrid: React.FC<CourseGridProps> = ({ courses, isLoading }) => {
+export const CourseGrid: React.FC<CourseGridProps> = memo(({ courses, isLoading }) => {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -48,4 +48,6 @@ export const CourseGrid: React.FC<CourseGridProps> = ({ courses, isLoading }) =>
       ))}
     </div>
   );
-};
+});
+
+CourseGrid.displayName = 'CourseGrid';

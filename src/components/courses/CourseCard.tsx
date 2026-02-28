@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Course } from '../../store/courseStore';
 import { useAuth } from '../../context/AuthContext';
@@ -8,7 +8,7 @@ interface CourseCardProps {
   course: Course;
 }
 
-export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
+export const CourseCard: React.FC<CourseCardProps> = memo(({ course }) => {
   const { user } = useAuth();
   const { isCourseSaved, saveCourse, unsaveCourse } = useSavedStore();
   const [isSaved, setIsSaved] = useState(false);
@@ -77,7 +77,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="bg-white  rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-green-200 relative">
+      <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-green-200 relative">
         {/* Save Button */}
         <button
           onClick={handleSaveToggle}
@@ -105,6 +105,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
               src={thumbnailUrl} 
               alt={course.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -153,4 +155,6 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
       </div>
     </Link>
   );
-};
+});
+
+CourseCard.displayName = 'CourseCard';
