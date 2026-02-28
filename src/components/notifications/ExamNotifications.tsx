@@ -76,6 +76,9 @@ export const ExamNotifications: React.FC = () => {
     setIsOpen(false);
   };
 
+if (location.pathname === '/login') {
+  return null;
+}
   return (
     <div className="fixed bottom-6 right-6 z-50">
       {/* Bell Icon - Shows only total count, not unviewed separately */}
