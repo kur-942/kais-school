@@ -146,30 +146,35 @@ export const PDFViewer: React.FC = () => {
             </div>
           )}
 
-          {/* Conteneur de l'iframe avec ratio adaptatif */}
+          {/* Conteneur de l'iframe - Hauteur améliorée pour mobile */}
           <div className={`
             relative w-full 
-            ${isFullscreen ? 'h-full' : 'aspect-[4/3] sm:aspect-[16/9] lg:aspect-[16/9]'}
+            ${isFullscreen ? 'h-full' : ''}
           `}>
-            {/* Loader */}
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg z-10">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Chargement du PDF...</p>
+            {/* Version mobile : hauteur fixe plus grande */}
+            <div className={`
+              ${!isFullscreen ? 'h-[70vh] sm:h-[75vh] md:h-[80vh] lg:aspect-[16/9] lg:h-auto' : 'h-full'}
+            `}>
+              {/* Loader */}
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg z-10">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Chargement du PDF...</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Iframe */}
-            <iframe
-              ref={iframeRef}
-              src={pdfUrl}
-              className={`w-full h-full rounded-lg border-0 transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-              title={title}
-              allow="autoplay"
-              onLoad={() => setIsLoading(false)}
-            />
+              {/* Iframe */}
+              <iframe
+                ref={iframeRef}
+                src={pdfUrl}
+                className={`w-full h-full rounded-lg border-0 transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+                title={title}
+                allow="autoplay"
+                onLoad={() => setIsLoading(false)}
+              />
+            </div>
           </div>
 
           {/* Note d'information (cachée en plein écran) */}
