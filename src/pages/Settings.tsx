@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { neon } from '@neondatabase/serverless';
-import bcrypt from 'bcryptjs';
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { neon } from "@neondatabase/serverless";
+import bcrypt from "bcryptjs";
 
 interface UserData {
   name: string;
@@ -19,87 +19,63 @@ interface PasswordData {
 export const Settings: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  
-  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
+
+  const [activeTab, setActiveTab] = useState<"profile" | "password">("profile");
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
   // Profile form state
   const [profileData, setProfileData] = useState<UserData>({
-    name: user?.name || '',
-    email: user?.email || '',
-    niveau: user?.niveau || ''
+    name: user?.name || "",
+    email: user?.email || "",
+    niveau: user?.niveau || "",
   });
-  
+
   // Password form state
   const [passwordData, setPasswordData] = useState<PasswordData>({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   const DATABASE_URL = import.meta.env.VITE_URL;
   const sql = neon(DATABASE_URL);
- useEffect(() => {
+  useEffect(() => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: "smooth",
     });
   }, []);
 
   // Niveaux options
   const niveaux: { category: string; options: string[] }[] = [
     {
-      category: '1ère année',
-      options: ['1ère']
+      category: "Baccalauréat",
+      options: ["Bac Info"],
     },
-    {
-      category: '2ème année',
-      options: [
-        '2ème Info technique',
-        '2ème Science expérimentale',
-        '2ème Lettre',
-        '2ème Économie gestion'
-      ]
-    },
-    {
-      category: '3ème année',
-      options: [
-        '3ème Info',
-        '3ème Math',
-        '3ème Technique',
-        '3ème Lettre',
-        '3ème Science expérimentale'
-      ]
-    },
-    {
-      category: 'Baccalauréat',
-      options: [
-        'Bac Info',
-        'Bac Math',
-        'Bac Technique',
-        'Bac Lettre',
-        'Bac Science expérimentale'
-      ]
-    }
   ];
 
-  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleProfileChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     setProfileData({
       ...profileData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPasswordData({
       ...passwordData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
-  const checkEmailExists = async (email: string, currentUserId: number): Promise<boolean> => {
+  const checkEmailExists = async (
+    email: string,
+    currentUserId: number,
+  ): Promise<boolean> => {
     try {
       const result = await sql`
         SELECT id FROM users WHERE email = ${email} AND id != ${currentUserId}
@@ -107,7 +83,7 @@ export const Settings: React.FC = () => {
       const typedResult = result as any[];
       return typedResult.length > 0;
     } catch (error) {
-      console.error('Error checking email:', error);
+      console.error("Error checking email:", error);
       return false;
     }
   };
@@ -115,17 +91,17 @@ export const Settings: React.FC = () => {
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage('');
-    setSuccessMessage('');
+    setErrorMessage("");
+    setSuccessMessage("");
 
     try {
-      if (!user?.id) throw new Error('Utilisateur non trouvé');
+      if (!user?.id) throw new Error("Utilisateur non trouvé");
 
       // Check if email is already in use by another user
       if (profileData.email !== user.email) {
         const emailExists = await checkEmailExists(profileData.email, user.id);
         if (emailExists) {
-          throw new Error('Cet email est déjà utilisé par un autre compte');
+          throw new Error("Cet email est déjà utilisé par un autre compte");
         }
       }
 
@@ -144,13 +120,15 @@ export const Settings: React.FC = () => {
           ...user,
           name: profileData.name,
           email: profileData.email,
-          niveau: profileData.niveau
-        }
+          niveau: profileData.niveau,
+        },
       });
 
-      setSuccessMessage('Profil mis à jour avec succès !');
+      setSuccessMessage("Profil mis à jour avec succès !");
     } catch (error: any) {
-      setErrorMessage(error.message || 'Erreur lors de la mise à jour du profil');
+      setErrorMessage(
+        error.message || "Erreur lors de la mise à jour du profil",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -159,19 +137,19 @@ export const Settings: React.FC = () => {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage('');
-    setSuccessMessage('');
+    setErrorMessage("");
+    setSuccessMessage("");
 
     try {
-      if (!user?.id) throw new Error('Utilisateur non trouvé');
+      if (!user?.id) throw new Error("Utilisateur non trouvé");
 
       // Validate passwords
       if (passwordData.newPassword !== passwordData.confirmPassword) {
-        throw new Error('Les mots de passe ne correspondent pas');
+        throw new Error("Les mots de passe ne correspondent pas");
       }
 
       if (passwordData.newPassword.length < 6) {
-        throw new Error('Le mot de passe doit contenir au moins 6 caractères');
+        throw new Error("Le mot de passe doit contenir au moins 6 caractères");
       }
 
       // Get current user with password
@@ -179,18 +157,21 @@ export const Settings: React.FC = () => {
         SELECT password FROM users WHERE id = ${user.id}
       `;
       const typedResult = result as any[];
-      
+
       if (typedResult.length === 0) {
-        throw new Error('Utilisateur non trouvé');
+        throw new Error("Utilisateur non trouvé");
       }
 
       const currentHashedPassword = typedResult[0].password;
 
       // Verify current password
-      const isValidPassword = await bcrypt.compare(passwordData.currentPassword, currentHashedPassword);
-      
+      const isValidPassword = await bcrypt.compare(
+        passwordData.currentPassword,
+        currentHashedPassword,
+      );
+
       if (!isValidPassword) {
-        throw new Error('Mot de passe actuel incorrect');
+        throw new Error("Mot de passe actuel incorrect");
       }
 
       // Hash new password
@@ -205,29 +186,35 @@ export const Settings: React.FC = () => {
 
       // Clear password form
       setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
       });
 
-      setSuccessMessage('Mot de passe mis à jour avec succès !');
+      setSuccessMessage("Mot de passe mis à jour avec succès !");
     } catch (error: any) {
-      setErrorMessage(error.message || 'Erreur lors de la mise à jour du mot de passe');
+      setErrorMessage(
+        error.message || "Erreur lors de la mise à jour du mot de passe",
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.')) {
+    if (
+      !window.confirm(
+        "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.",
+      )
+    ) {
       return;
     }
 
     setIsLoading(true);
-    setErrorMessage('');
+    setErrorMessage("");
 
     try {
-      if (!user?.id) throw new Error('Utilisateur non trouvé');
+      if (!user?.id) throw new Error("Utilisateur non trouvé");
 
       // Delete user from database
       await sql`
@@ -236,15 +223,17 @@ export const Settings: React.FC = () => {
 
       // Logout and redirect
       logout();
-      navigate('/login');
+      navigate("/login");
     } catch (error: any) {
-      setErrorMessage(error.message || 'Erreur lors de la suppression du compte');
+      setErrorMessage(
+        error.message || "Erreur lors de la suppression du compte",
+      );
       setIsLoading(false);
     }
   };
 
   if (!user) {
-    navigate('/login');
+    navigate("/login");
     return null;
   }
 
@@ -259,11 +248,23 @@ export const Settings: React.FC = () => {
                 onClick={() => navigate(-1)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  />
                 </svg>
               </button>
-              <h1 className="text-xl font-semibold text-gray-800">Paramètres</h1>
+              <h1 className="text-xl font-semibold text-gray-800">
+                Paramètres
+              </h1>
             </div>
           </div>
         </div>
@@ -274,21 +275,21 @@ export const Settings: React.FC = () => {
         {/* Tabs */}
         <div className="flex border-b border-gray-200 mb-8">
           <button
-            onClick={() => setActiveTab('profile')}
+            onClick={() => setActiveTab("profile")}
             className={`px-4 py-2 font-medium text-sm transition-colors relative ${
-              activeTab === 'profile'
-                ? 'text-green-600 border-b-2 border-green-500'
-                : 'text-gray-500 hover:text-gray-700'
+              activeTab === "profile"
+                ? "text-green-600 border-b-2 border-green-500"
+                : "text-gray-500 hover:text-gray-700"
             }`}
           >
             Profil
           </button>
           <button
-            onClick={() => setActiveTab('password')}
+            onClick={() => setActiveTab("password")}
             className={`px-4 py-2 font-medium text-sm transition-colors relative ${
-              activeTab === 'password'
-                ? 'text-green-600 border-b-2 border-green-500'
-                : 'text-gray-500 hover:text-gray-700'
+              activeTab === "password"
+                ? "text-green-600 border-b-2 border-green-500"
+                : "text-gray-500 hover:text-gray-700"
             }`}
           >
             Mot de passe
@@ -298,8 +299,18 @@ export const Settings: React.FC = () => {
         {/* Success/Error Messages */}
         {successMessage && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center gap-3">
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-5 h-5 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             <span>{successMessage}</span>
           </div>
@@ -307,19 +318,32 @@ export const Settings: React.FC = () => {
 
         {errorMessage && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-center gap-3">
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-5 h-5 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* Profile Tab */}
-        {activeTab === 'profile' && (
+        {activeTab === "profile" && (
           <form onSubmit={handleProfileSubmit} className="space-y-6">
             {/* Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Nom complet
               </label>
               <input
@@ -336,7 +360,10 @@ export const Settings: React.FC = () => {
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Email
               </label>
               <input
@@ -356,7 +383,10 @@ export const Settings: React.FC = () => {
 
             {/* Niveau */}
             <div>
-              <label htmlFor="niveau" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="niveau"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Niveau d'étude
               </label>
               <select
@@ -389,24 +419,39 @@ export const Settings: React.FC = () => {
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                   </svg>
                   Mise à jour...
                 </span>
               ) : (
-                'Mettre à jour le profil'
+                "Mettre à jour le profil"
               )}
             </button>
           </form>
         )}
 
         {/* Password Tab */}
-        {activeTab === 'password' && (
+        {activeTab === "password" && (
           <form onSubmit={handlePasswordSubmit} className="space-y-6">
             {/* Current Password */}
             <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="currentPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Mot de passe actuel
               </label>
               <input
@@ -423,7 +468,10 @@ export const Settings: React.FC = () => {
 
             {/* New Password */}
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="newPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Nouveau mot de passe
               </label>
               <input
@@ -442,7 +490,10 @@ export const Settings: React.FC = () => {
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Confirmer le nouveau mot de passe
               </label>
               <input
@@ -466,13 +517,25 @@ export const Settings: React.FC = () => {
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                   </svg>
                   Mise à jour...
                 </span>
               ) : (
-                'Changer le mot de passe'
+                "Changer le mot de passe"
               )}
             </button>
           </form>
@@ -480,7 +543,9 @@ export const Settings: React.FC = () => {
 
         {/* Danger Zone */}
         <div className="mt-12 pt-8 border-t border-gray-200">
-          <h2 className="text-lg font-semibold text-red-600 mb-4">Zone dangereuse</h2>
+          <h2 className="text-lg font-semibold text-red-600 mb-4">
+            Zone dangereuse
+          </h2>
           <button
             onClick={handleDeleteAccount}
             disabled={isLoading}
@@ -498,4 +563,4 @@ export const Settings: React.FC = () => {
 };
 
 // Need to import useAuthStore
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from "../store/authStore";

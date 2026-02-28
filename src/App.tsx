@@ -15,6 +15,10 @@ import { Calculator } from "./pages/tools/Calculator";
 import { FunctionEvaluator } from "./pages/tools/FunctionEvaluator";
 import { GraphPlotter } from "./pages/tools/GraphPlotter";
 import { Posts } from "./pages/Posts";
+import { CalculatorWidget } from "./components/CalculatorWidget";
+import { PDFViewer } from "./pages/PDFViewer"; // Add this import
+import { ImageViewer } from "./pages/ImageViewer"; // Add this import
+import { DeepSeekChat } from "./components/DeepSeekChat";
 
 function App() {
   return (
@@ -111,10 +115,30 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            
+            <Route
+              path="/viewer/pdf"
+              element={
+                <ProtectedRoute>
+                  <PDFViewer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/viewer/image"
+              element={
+                <ProtectedRoute>
+                  <ImageViewer />
+                </ProtectedRoute>
+              }
+            />
+            
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
           <ExamNotifications />
+          <CalculatorWidget />
+           <DeepSeekChat />
         </div>
       </AuthProvider>
     </BrowserRouter>

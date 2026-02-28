@@ -141,36 +141,9 @@ useEffect(() => {
   // Updated niveau options based on your requirements
   const niveaux: { category: string; options: string[] }[] = [
     {
-      category: '1ère année',
-      options: ['1ère']
-    },
-    {
-      category: '2ème année',
-      options: [
-        '2ème Info technique',
-        '2ème Science expérimentale',
-        '2ème Lettre',
-        '2ème Économie gestion'
-      ]
-    },
-    {
-      category: '3ème année',
-      options: [
-        '3ème Info',
-        '3ème Math',
-        '3ème Technique',
-        '3ème Lettre',
-        '3ème Science expérimentale'
-      ]
-    },
-    {
       category: 'Baccalauréat',
       options: [
         'Bac Info',
-        'Bac Math',
-        'Bac Technique',
-        'Bac Lettre',
-        'Bac Science expérimentale'
       ]
     }
   ];

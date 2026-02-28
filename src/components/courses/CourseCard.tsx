@@ -1,5 +1,5 @@
-import React, { useState, useEffect, memo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, memo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Course } from '../../store/courseStore';
 import { useAuth } from '../../context/AuthContext';
 import { useSavedStore } from '../../store/savedStore';
@@ -10,6 +10,7 @@ interface CourseCardProps {
 
 export const CourseCard: React.FC<CourseCardProps> = memo(({ course }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { isCourseSaved, saveCourse, unsaveCourse } = useSavedStore();
   const [isSaved, setIsSaved] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -34,6 +35,29 @@ export const CourseCard: React.FC<CourseCardProps> = memo(({ course }) => {
       setIsSaved(true);
     }
   };
+
+ // In CourseCard.tsx, update the handleOpenContent function
+const handleOpenContent = useCallback((e: React.MouseEvent) => {
+  e.preventDefault();
+  
+  switch (course.content_type) {
+    case 'video':
+      navigate(`/course/${course.id}`);
+      break;
+    case 'pdf':
+      navigate(`/viewer/pdf?url=${encodeURIComponent(course.content_url)}&title=${encodeURIComponent(course.title)}`);
+      break;
+    case 'image':
+      navigate(`/viewer/image?url=${encodeURIComponent(course.content_url)}&title=${encodeURIComponent(course.title)}`);
+      break;
+    case 'text':
+      // For text, you might want to fetch and display the content
+      window.open(course.content_url, '_blank');
+      break;
+    default:
+      window.open(course.content_url, '_blank');
+  }
+}, [course, navigate]);
 
   const getYouTubeVideoId = (url: string) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -65,15 +89,21 @@ export const CourseCard: React.FC<CourseCardProps> = memo(({ course }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
         );
+      case 'image':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        );
       default:
         return null;
     }
   };
 
   return (
-    <Link 
-      to={`/course/${course.id}`} 
-      className="block group"
+    <div
+      onClick={handleOpenContent}
+      className="block group cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -100,7 +130,7 @@ export const CourseCard: React.FC<CourseCardProps> = memo(({ course }) => {
 
         {/* Course Image/Thumbnail */}
         <div className="relative h-48 overflow-hidden bg-gradient-to-br from-green-100 to-green-50">
-          {thumbnailUrl ? (
+          {course.content_type === 'video' && thumbnailUrl ? (
             <img 
               src={thumbnailUrl} 
               alt={course.title}
@@ -108,11 +138,24 @@ export const CourseCard: React.FC<CourseCardProps> = memo(({ course }) => {
               loading="lazy"
               decoding="async"
             />
+          ) : course.content_type === 'image' ? (
+            <img 
+              src={course.content_url} 
+              alt={course.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              decoding="async"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/640x360?text=Image+non+disponible';
+              }}
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <svg className="w-16 h-16 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
+              <div className="text-6xl opacity-30">
+                {course.content_type === 'pdf' ? '📄' : 
+                 course.content_type === 'text' ? '📝' : 
+                 '📁'}
+              </div>
             </div>
           )}
           
@@ -145,7 +188,12 @@ export const CourseCard: React.FC<CourseCardProps> = memo(({ course }) => {
             </span>
             
             <span className="inline-flex items-center gap-2 text-sm font-medium text-green-600 group-hover:text-green-700 transition-colors">
-              <span>Voir le cours</span>
+              <span>
+                {course.content_type === 'video' ? 'Regarder' :
+                 course.content_type === 'pdf' ? 'Lire' :
+                 course.content_type === 'text' ? 'Lire' :
+                 course.content_type === 'image' ? 'Voir' : 'Ouvrir'}
+              </span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
@@ -153,7 +201,7 @@ export const CourseCard: React.FC<CourseCardProps> = memo(({ course }) => {
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 });
 
