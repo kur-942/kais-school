@@ -9,6 +9,7 @@ import { Settings } from './pages/Settings';
 import { Tasks } from './pages/Tasks';
 import { Saved } from './pages/Saved';
 import { Footer } from './components/layout/Footer';
+import { ExamNotifications } from './components/notifications/ExamNotifications';
 
 function App() {
  
@@ -69,6 +70,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
+          <ExamNotifications /> 
         </div>
       </AuthProvider>
     </BrowserRouter>

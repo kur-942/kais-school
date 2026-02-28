@@ -13,8 +13,8 @@ export const Tasks: React.FC = () => {
   // State for category manager
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   
-  const { categories, fetchCategoriesByNiveau } = useCategoryStore();
-  const { fetchCategories: fetchTaskCategories } = useTaskCategoryStore();
+  const { fetchCategoriesByNiveau } = useCategoryStore();
+  const { categories: taskCategories, fetchCategories: fetchTaskCategories } = useTaskCategoryStore();
   
   const { 
     tasks,
@@ -47,6 +47,7 @@ export const Tasks: React.FC = () => {
     title: '',
     description: '',
     category_id: '',
+    task_category_id: '',
     due_date: new Date().toISOString().split('T')[0]
   });
 
@@ -56,6 +57,13 @@ export const Tasks: React.FC = () => {
     description: '',
     exam_date: new Date().toISOString().split('T')[0]
   });
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }, []);
 
   useEffect(() => {
     if (user?.id) {
@@ -76,10 +84,12 @@ export const Tasks: React.FC = () => {
       title: taskForm.title,
       description: taskForm.description || null,
       task_type: 'todo',
-      category_id: taskForm.category_id ? parseInt(taskForm.category_id) : null,
+      category_id: null, // Don't use course categories for tasks
+      task_category_id: taskForm.task_category_id ? parseInt(taskForm.task_category_id) : null,
       exam_id: null,
       is_done: false,
-      due_date: taskForm.due_date || null
+      due_date: taskForm.due_date || null,
+      priority: 'medium'
     };
 
     await addTask(newTask);
@@ -88,16 +98,11 @@ export const Tasks: React.FC = () => {
       title: '',
       description: '',
       category_id: '',
+      task_category_id: '',
       due_date: new Date().toISOString().split('T')[0]
     });
     setShowAddModal(false);
   };
- useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  }, []);
 
   const handleAddExam = async () => {
     if (!user?.id) return;
@@ -127,7 +132,7 @@ export const Tasks: React.FC = () => {
     await updateTask(editingTask.id, {
       title: taskForm.title,
       description: taskForm.description || null,
-      category_id: taskForm.category_id ? parseInt(taskForm.category_id) : null,
+      task_category_id: taskForm.task_category_id ? parseInt(taskForm.task_category_id) : null,
       due_date: taskForm.due_date || null
     });
 
@@ -136,6 +141,7 @@ export const Tasks: React.FC = () => {
       title: '',
       description: '',
       category_id: '',
+      task_category_id: '',
       due_date: new Date().toISOString().split('T')[0]
     });
   };
@@ -164,7 +170,8 @@ export const Tasks: React.FC = () => {
     setTaskForm({
       title: task.title,
       description: task.description || '',
-      category_id: task.category_id?.toString() || '',
+      category_id: '',
+      task_category_id: task.task_category_id?.toString() || '',
       due_date: task.due_date || new Date().toISOString().split('T')[0]
     });
     setModalType('todo');
@@ -189,10 +196,45 @@ export const Tasks: React.FC = () => {
     }
   };
 
+  // Get filtered exams based on current filters
+  const getFilteredExams = () => {
+    let filtered = [...exams];
+    
+    if (filters.taskType === 'todo') {
+      return []; // Don't show exams when filter is set to tasks only
+    }
+    
+    // Sort by date (nearest first)
+    return filtered.sort((a, b) => 
+      new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime()
+    );
+  };
+
+  // Get filtered tasks based on current filters
+  const getFilteredTasks = () => {
+    let filtered = [...tasks];
+    
+    if (filters.taskType === 'exam') {
+      return []; // Don't show tasks when filter is set to exams only
+    }
+    
+    if (filters.taskCategoryId) {
+      filtered = filtered.filter(task => task.task_category_id === filters.taskCategoryId);
+    }
+    
+    if (filters.isDone !== null) {
+      filtered = filtered.filter(task => task.is_done === filters.isDone);
+    }
+    
+    return filtered;
+  };
+
   const getTasksByDate = () => {
     const tasksByDate: { [key: string]: (Task | Exam)[] } = {};
     
-    displayedTasks.forEach(task => {
+    // Add filtered tasks to date groups
+    const filteredTasks = getFilteredTasks();
+    filteredTasks.forEach(task => {
       if (task.due_date) {
         if (!tasksByDate[task.due_date]) {
           tasksByDate[task.due_date] = [];
@@ -201,17 +243,26 @@ export const Tasks: React.FC = () => {
       }
     });
     
-    exams.forEach(exam => {
+    // Add filtered exams to date groups
+    const filteredExams = getFilteredExams();
+    filteredExams.forEach(exam => {
       if (!tasksByDate[exam.exam_date]) {
         tasksByDate[exam.exam_date] = [];
       }
       tasksByDate[exam.exam_date].push(exam);
     });
     
+    // Sort dates chronologically
     return Object.keys(tasksByDate)
-      .sort()
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
       .reduce((acc, date) => {
-        acc[date] = tasksByDate[date];
+        // Sort items within each date (exams first, then tasks)
+        acc[date] = tasksByDate[date].sort((a, b) => {
+          // Exams come first
+          if ('subject' in a && !('subject' in b)) return -1;
+          if (!('subject' in a) && 'subject' in b) return 1;
+          return 0;
+        });
         return acc;
       }, {} as { [key: string]: (Task | Exam)[] });
   };
@@ -274,6 +325,19 @@ export const Tasks: React.FC = () => {
                   setModalType('todo');
                   setEditingTask(null);
                   setEditingExam(null);
+                  setTaskForm({
+                    title: '',
+                    description: '',
+                    category_id: '',
+                    task_category_id: '',
+                    due_date: new Date().toISOString().split('T')[0]
+                  });
+                  setExamForm({
+                    name: '',
+                    subject: '',
+                    description: '',
+                    exam_date: new Date().toISOString().split('T')[0]
+                  });
                   setShowAddModal(true);
                 }}
                 className="p-2 sm:px-4 sm:py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:from-green-600 hover:to-green-700 transition-colors flex items-center gap-1 sm:gap-2"
@@ -331,7 +395,14 @@ export const Tasks: React.FC = () => {
 
       {/* Category Manager Modal */}
       {showCategoryManager && (
-        <TaskCategoryManager onClose={() => setShowCategoryManager(false)} />
+        <TaskCategoryManager 
+          onClose={() => {
+            setShowCategoryManager(false);
+            if (user?.id) {
+              fetchTaskCategories(user.id);
+            }
+          }}
+        />
       )}
 
       {/* Main Content */}
@@ -349,14 +420,17 @@ export const Tasks: React.FC = () => {
               <option value="exam">Examens</option>
             </select>
 
+            {/* Personal Categories Filter */}
             <select
-              value={filters.categoryId || ''}
-              onChange={(e) => setFilter('categoryId', e.target.value ? parseInt(e.target.value) : null)}
+              value={filters.taskCategoryId || ''}
+              onChange={(e) => setFilter('taskCategoryId', e.target.value ? parseInt(e.target.value) : null)}
               className="w-full sm:w-auto px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 text-sm"
             >
-              <option value="">Toutes catégories</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              <option value="">Toutes catégories perso</option>
+              {taskCategories.map(cat => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.icon} {cat.name}
+                </option>
               ))}
             </select>
 
@@ -514,20 +588,22 @@ export const Tasks: React.FC = () => {
                                 }`}>
                                   {task.title}
                                 </h4>
-                                {task.description && (
-                                  <p className={`text-xs sm:text-sm mt-0.5 line-clamp-2 ${
-                                    task.is_done ? 'text-gray-300' : 'text-gray-600'
-                                  }`}>
-                                    {task.description}
-                                  </p>
-                                )}
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {task.task_category && (
+                                    <span 
+                                      className="text-xs px-2 py-0.5 rounded-full inline-flex items-center gap-1"
+                                      style={{ 
+                                        backgroundColor: task.task_category.color + '20',
+                                        color: task.task_category.color 
+                                      }}
+                                    >
+                                      <span>{task.task_category.icon}</span>
+                                      <span>{task.task_category.name}</span>
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex items-center gap-1 sm:gap-2 ml-auto sm:ml-0">
-                                {task.category_name && (
-                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full whitespace-nowrap">
-                                    {task.category_name}
-                                  </span>
-                                )}
                                 <button
                                   onClick={() => openEditTask(task)}
                                   className="p-1 text-gray-400 hover:text-blue-600"
@@ -570,23 +646,24 @@ export const Tasks: React.FC = () => {
         )}
 
         {/* Empty State */}
-        {tasks.length === 0 && exams.length === 0 && !isLoading && (
+        {getFilteredTasks().length === 0 && getFilteredExams().length === 0 && !isLoading && (
           <div className="text-center py-8 sm:py-12">
             <div className="inline-block p-3 sm:p-4 bg-green-50 rounded-full mb-3 sm:mb-4">
               <svg className="w-8 h-8 sm:w-12 sm:h-12 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <h3 className="text-base sm:text-xl font-semibold text-gray-700 mb-1 sm:mb-2">Aucune tâche ni examen</h3>
-            <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4 px-4">Commencez par créer une nouvelle tâche ou un examen.</p>
+            <h3 className="text-base sm:text-xl font-semibold text-gray-700 mb-1 sm:mb-2">Aucun élément trouvé</h3>
+            <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4 px-4">Aucune tâche ou examen ne correspond à vos filtres.</p>
             <button
               onClick={() => {
-                setModalType('todo');
-                setShowAddModal(true);
+                setFilter('taskType', 'all');
+                setFilter('taskCategoryId', null);
+                setFilter('isDone', null);
               }}
               className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-sm sm:text-base hover:from-green-600 hover:to-green-700 transition-colors"
             >
-              Créer maintenant
+              Effacer les filtres
             </button>
           </div>
         )}
@@ -680,16 +757,19 @@ export const Tasks: React.FC = () => {
                     />
                   </div>
 
+                  {/* Personal Categories Only */}
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Catégorie</label>
                     <select
-                      value={taskForm.category_id}
-                      onChange={(e) => setTaskForm({...taskForm, category_id: e.target.value})}
+                      value={taskForm.task_category_id}
+                      onChange={(e) => setTaskForm({...taskForm, task_category_id: e.target.value})}
                       className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500"
                     >
                       <option value="">Sans catégorie</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      {taskCategories.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name}
+                        </option>
                       ))}
                     </select>
                   </div>

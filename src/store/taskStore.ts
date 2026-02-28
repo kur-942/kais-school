@@ -8,12 +8,20 @@ export interface Task {
   description: string | null;
   task_type: 'todo' | 'exam';
   category_id: number | null;
+  task_category_id: number | null; // Added for user-defined categories
   exam_id: number | null;
   is_done: boolean;
   due_date: string | null;
+  priority: 'low' | 'medium' | 'high'; // Added priority
   created_at: string;
-  // Joined field
+  // Joined fields
   category_name?: string;
+  task_category?: {
+    id: number;
+    name: string;
+    color: string;
+    icon: string;
+  } | null;
 }
 
 export interface Exam {
@@ -26,7 +34,7 @@ export interface Exam {
   created_at: string;
 }
 
-export type NewTask = Omit<Task, 'id' | 'created_at' | 'category_name'>;
+export type NewTask = Omit<Task, 'id' | 'created_at' | 'category_name' | 'task_category'>;
 export type NewExam = Omit<Exam, 'id' | 'created_at'>;
 
 interface TaskState {
@@ -42,6 +50,7 @@ interface TaskState {
   filters: {
     taskType: 'all' | 'todo' | 'exam';
     categoryId: number | null;
+    taskCategoryId: number | null;
     isDone: boolean | null;
   };
   
@@ -79,6 +88,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   filters: {
     taskType: 'all',
     categoryId: null,
+    taskCategoryId: null,
     isDone: null
   },
 
@@ -88,12 +98,22 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       const tasks = await sql`
         SELECT 
           t.*,
-          c.name as category_name
+          c.name as category_name,
+          tc.id as tc_id,
+          tc.name as tc_name,
+          tc.color as tc_color,
+          tc.icon as tc_icon
         FROM tasks t
         LEFT JOIN categories c ON t.category_id = c.id
+        LEFT JOIN task_categories tc ON t.task_category_id = tc.id
         WHERE t.user_id = ${userId}
         ORDER BY 
           CASE WHEN t.is_done THEN 1 ELSE 0 END,
+          CASE t.priority 
+            WHEN 'high' THEN 1
+            WHEN 'medium' THEN 2
+            WHEN 'low' THEN 3
+          END,
           CASE WHEN t.due_date IS NULL THEN 1 ELSE 0 END,
           t.due_date ASC,
           t.created_at DESC
@@ -108,11 +128,19 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         description: task.description,
         task_type: task.task_type,
         category_id: task.category_id,
+        task_category_id: task.task_category_id,
         exam_id: task.exam_id,
         is_done: task.is_done,
         due_date: task.due_date,
+        priority: task.priority || 'medium',
         created_at: task.created_at,
-        category_name: task.category_name
+        category_name: task.category_name,
+        task_category: task.task_category_id ? {
+          id: task.tc_id,
+          name: task.tc_name,
+          color: task.tc_color,
+          icon: task.tc_icon
+        } : null
       }));
 
       set({ 
@@ -175,19 +203,23 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           title, 
           description, 
           task_type, 
-          category_id, 
+          category_id,
+          task_category_id, 
           exam_id, 
           is_done, 
-          due_date
+          due_date,
+          priority
         ) VALUES (
           ${task.user_id}, 
           ${task.title}, 
           ${task.description}, 
           ${task.task_type}, 
-          ${task.category_id}, 
+          ${task.category_id},
+          ${task.task_category_id}, 
           ${task.exam_id}, 
           ${task.is_done}, 
-          ${task.due_date}
+          ${task.due_date},
+          ${task.priority}
         )
         RETURNING *
       `;
@@ -210,6 +242,23 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           }
         }
         
+        // Fetch task category info if exists
+        let taskCategory = null;
+        if (createdTask.task_category_id) {
+          const taskCat = await sql`
+            SELECT * FROM task_categories WHERE id = ${createdTask.task_category_id}
+          `;
+          const typedTaskCat = taskCat as any[];
+          if (typedTaskCat.length > 0) {
+            taskCategory = {
+              id: typedTaskCat[0].id,
+              name: typedTaskCat[0].name,
+              color: typedTaskCat[0].color,
+              icon: typedTaskCat[0].icon
+            };
+          }
+        }
+        
         const newTask: Task = {
           id: createdTask.id,
           user_id: createdTask.user_id,
@@ -217,11 +266,14 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           description: createdTask.description,
           task_type: createdTask.task_type,
           category_id: createdTask.category_id,
+          task_category_id: createdTask.task_category_id,
           exam_id: createdTask.exam_id,
           is_done: createdTask.is_done,
           due_date: createdTask.due_date,
+          priority: createdTask.priority || 'medium',
           created_at: createdTask.created_at,
-          category_name: categoryName
+          category_name: categoryName,
+          task_category: taskCategory
         };
         
         set(state => ({
@@ -305,8 +357,14 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       if (updates.category_id !== undefined) {
         await sql`UPDATE tasks SET category_id = ${updates.category_id} WHERE id = ${taskId}`;
       }
+      if (updates.task_category_id !== undefined) {
+        await sql`UPDATE tasks SET task_category_id = ${updates.task_category_id} WHERE id = ${taskId}`;
+      }
       if (updates.due_date !== undefined) {
         await sql`UPDATE tasks SET due_date = ${updates.due_date} WHERE id = ${taskId}`;
+      }
+      if (updates.priority !== undefined) {
+        await sql`UPDATE tasks SET priority = ${updates.priority} WHERE id = ${taskId}`;
       }
       if (updates.is_done !== undefined) {
         await sql`UPDATE tasks SET is_done = ${updates.is_done} WHERE id = ${taskId}`;
@@ -446,6 +504,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       filtered = filtered.filter(task => task.category_id === filters.categoryId);
     }
     
+    if (filters.taskCategoryId) {
+      filtered = filtered.filter(task => task.task_category_id === filters.taskCategoryId);
+    }
+    
     if (filters.isDone !== null) {
       filtered = filtered.filter(task => task.is_done === filters.isDone);
     }
@@ -481,6 +543,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       filters: {
         taskType: 'all',
         categoryId: null,
+        taskCategoryId: null,
         isDone: null
       }
     });

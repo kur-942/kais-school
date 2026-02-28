@@ -4,11 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 
 interface TaskCategoryManagerProps {
   onClose: () => void;
+  onCategoryChange?: () => void; 
 }
 
-export const TaskCategoryManager: React.FC<TaskCategoryManagerProps> = ({ onClose }) => {
+export const TaskCategoryManager: React.FC<TaskCategoryManagerProps> = ({ onClose, onCategoryChange }) => {
   const { user } = useAuth();
-  const { categories, addCategory, updateCategory, deleteCategory } = useTaskCategoryStore();
+  const { categories, addCategory, updateCategory, deleteCategory, fetchCategories } = useTaskCategoryStore();
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<number | null>(null);
@@ -26,6 +27,13 @@ export const TaskCategoryManager: React.FC<TaskCategoryManagerProps> = ({ onClos
       await updateCategory(editingCategory, formData);
     } else {
       await addCategory(user.id, formData.name, formData.color, formData.icon);
+    }
+
+    // Refresh categories
+    await fetchCategories(user.id);
+    
+    if (onCategoryChange) {
+      onCategoryChange();
     }
 
     setShowAddForm(false);
@@ -46,6 +54,12 @@ export const TaskCategoryManager: React.FC<TaskCategoryManagerProps> = ({ onClos
   const handleDelete = async (categoryId: number) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ? Les tâches associées ne seront pas supprimées mais n\'auront plus de catégorie.')) {
       await deleteCategory(categoryId);
+      if (user?.id) {
+        await fetchCategories(user.id);
+      }
+      if (onCategoryChange) {
+        onCategoryChange();
+      }
     }
   };
 
@@ -53,6 +67,17 @@ export const TaskCategoryManager: React.FC<TaskCategoryManagerProps> = ({ onClos
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-800">Gérer les catégories</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-800">Gérer les catégories</h2>
             <button
