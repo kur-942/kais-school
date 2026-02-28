@@ -99,6 +99,7 @@ export const CalculatorWidget: React.FC = () => {
       }
     }
   };
+  
   if (location.pathname === '/login') {
   return null;
 }
