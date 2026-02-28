@@ -4,43 +4,38 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 export interface ExamNotification {
   examId: number;
   examName: string;
+  examSubject: string;
   examDate: string;
   daysUntil: number;
-  severity: 'green' | 'orange' | 'red';
-  lastNotified: string;
-  hidden: boolean;
+  severity: 'green' | 'orange' | 'red' | 'gray';
+  status: 'upcoming' | 'today' | 'past';
+  viewed: boolean;
+  viewedAt?: string; // Track when it was viewed
 }
 
 interface NotificationState {
   notifications: ExamNotification[];
-  lastChecked: string | null;
+  unviewedCount: number;
   
-  checkExams: (exams: any[]) => void;
-  hideNotification: (examId: number) => void;
-  hideAllNotifications: () => void;
-  clearOldNotifications: () => void;
-  getActiveNotifications: () => ExamNotification[];
+  updateNotifications: (exams: any[]) => void;
+  markAsViewed: (examId: number) => void;
+  markAllAsViewed: () => void;
+  getNotifications: () => ExamNotification[];
+  getUnviewedCount: () => number;
 }
 
 export const useNotificationStore = create<NotificationState>()(
   persist(
     (set, get) => ({
       notifications: [],
-      lastChecked: null,
+      unviewedCount: 0,
 
-      checkExams: (exams) => {
+      updateNotifications: (exams) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        const todayStr = today.toISOString().split('T')[0];
-        const lastChecked = get().lastChecked;
-        
-        // Only check once per day
-        if (lastChecked === todayStr) {
-          return;
-        }
-
-        const newNotifications: ExamNotification[] = [];
+        const existingNotifications = get().notifications;
+        const updatedNotifications: ExamNotification[] = [];
         
         exams.forEach((exam) => {
           const examDate = new Date(exam.exam_date);
@@ -49,67 +44,117 @@ export const useNotificationStore = create<NotificationState>()(
           const diffTime = examDate.getTime() - today.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           
-          // Only notify for upcoming exams within 3 days
-          if (diffDays > 0 && diffDays <= 3) {
-            // Check if notification already exists
-            const existing = get().notifications.find(n => n.examId === exam.id);
-            
-            if (!existing || existing.hidden === false) {
-              let severity: 'green' | 'orange' | 'red' = 'green';
-              if (diffDays === 1) severity = 'red';
-              else if (diffDays === 2) severity = 'orange';
-              
-              newNotifications.push({
+          // Determine status and severity
+          let status: 'upcoming' | 'today' | 'past' = 'upcoming';
+          let severity: 'green' | 'orange' | 'red' | 'gray' = 'green';
+          
+          if (diffDays < 0) {
+            status = 'past';
+            severity = 'gray';
+          } else if (diffDays === 0) {
+            status = 'today';
+            severity = 'red';
+          } else if (diffDays === 1) {
+            status = 'upcoming';
+            severity = 'red';
+          } else if (diffDays <= 3) {
+            status = 'upcoming';
+            severity = 'orange';
+          } else {
+            status = 'upcoming';
+            severity = 'green';
+          }
+          
+          // Find existing notification
+          const existing = existingNotifications.find(n => n.examId === exam.id);
+          
+          if (existing) {
+            // Preserve viewed status if exam date hasn't changed
+            if (existing.examDate === exam.exam_date) {
+              updatedNotifications.push({
+                ...existing,
+                daysUntil: diffDays,
+                severity,
+                status,
+              });
+            } else {
+              // Date changed, reset viewed status
+              updatedNotifications.push({
                 examId: exam.id,
                 examName: exam.name,
+                examSubject: exam.subject,
                 examDate: exam.exam_date,
                 daysUntil: diffDays,
                 severity,
-                lastNotified: todayStr,
-                hidden: false
+                status,
+                viewed: false,
               });
             }
+          } else {
+            // New exam
+            updatedNotifications.push({
+              examId: exam.id,
+              examName: exam.name,
+              examSubject: exam.subject,
+              examDate: exam.exam_date,
+              daysUntil: diffDays,
+              severity,
+              status,
+              viewed: false,
+            });
           }
         });
-
-        // Merge with existing non-hidden notifications
-        const existingNotifications = get().notifications.filter(n => n.hidden === false);
         
-        set({
-          notifications: [...existingNotifications, ...newNotifications],
-          lastChecked: todayStr
+        // Sort by date (nearest first)
+        const sorted = updatedNotifications.sort((a, b) => 
+          new Date(a.examDate).getTime() - new Date(b.examDate).getTime()
+        );
+        
+        // Calculate unviewed count
+        const unviewed = sorted.filter(n => !n.viewed).length;
+        
+        set({ 
+          notifications: sorted,
+          unviewedCount: unviewed 
         });
       },
 
-      hideNotification: (examId: number) => {
-        set(state => ({
-          notifications: state.notifications.map(n => 
-            n.examId === examId ? { ...n, hidden: true } : n
-          )
-        }));
+      markAsViewed: (examId: number) => {
+        set(state => {
+          const updatedNotifications = state.notifications.map(n => 
+            n.examId === examId ? { ...n, viewed: true, viewedAt: new Date().toISOString() } : n
+          );
+          
+          const unviewed = updatedNotifications.filter(n => !n.viewed).length;
+          
+          return {
+            notifications: updatedNotifications,
+            unviewedCount: unviewed
+          };
+        });
       },
 
-      hideAllNotifications: () => {
-        set(state => ({
-          notifications: state.notifications.map(n => ({ ...n, hidden: true }))
-        }));
+      markAllAsViewed: () => {
+        set(state => {
+          const updatedNotifications = state.notifications.map(n => ({ 
+            ...n, 
+            viewed: true,
+            viewedAt: new Date().toISOString() 
+          }));
+          
+          return {
+            notifications: updatedNotifications,
+            unviewedCount: 0
+          };
+        });
       },
 
-      clearOldNotifications: () => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        set(state => ({
-          notifications: state.notifications.filter(n => {
-            const examDate = new Date(n.examDate);
-            examDate.setHours(0, 0, 0, 0);
-            return examDate >= today;
-          })
-        }));
+      getNotifications: () => {
+        return get().notifications;
       },
 
-      getActiveNotifications: () => {
-        return get().notifications.filter(n => !n.hidden);
+      getUnviewedCount: () => {
+        return get().notifications.filter(n => !n.viewed).length;
       }
     }),
     {
