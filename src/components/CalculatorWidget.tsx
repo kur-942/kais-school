@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 
 export const CalculatorWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
+  const location = useLocation();
 
   const calculate = (expr: string) => {
     try {
@@ -100,9 +102,10 @@ export const CalculatorWidget: React.FC = () => {
     }
   };
   
+  // Masquer complètement sur la page de login
   if (location.pathname === '/login') {
-  return null;
-}
+    return null;
+  }
 
   return (
     <div className="fixed bottom-6 left-6 z-50">
