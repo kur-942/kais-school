@@ -14,6 +14,7 @@ import { Tools } from "./pages/Tools";
 import { Calculator } from "./pages/tools/Calculator";
 import { FunctionEvaluator } from "./pages/tools/FunctionEvaluator";
 import { GraphPlotter } from "./pages/tools/GraphPlotter";
+import { Posts } from "./pages/Posts";
 
 function App() {
   return (
@@ -99,6 +100,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <FunctionEvaluator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/posts"
+              element={
+                <ProtectedRoute>
+                  <Posts />
                 </ProtectedRoute>
               }
             />
