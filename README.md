@@ -1,4 +1,4 @@
-# 🚀 Akinji - Votre Compagnon Éducatif Intelligent
+# 🚀 Akinji -sp - Votre Compagnon Éducatif Intelligent
 
 **URL :** [akinji.vercel.app](https://akinji.vercel.app)
 
